@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Adventure Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black; /* Черный фон */
+            color: #00ff00; /* Зелёный цвет текста */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            position: relative; /* Для позиционирования двоичного кода */
+            overflow: hidden; /* Скрыть элементы, выходящие за пределы */
+        }
+        #console {
+            width: 600px;
+            height: 400px;
+            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный чёрный фон для текста */
+            color: #00ff00;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        #inputField {
+            width: 600px;
+            padding: 5px;
+            margin-top: 10px;
+            background-color: #333; /* Темно-серый цвет фона для ввода */
+            color: #00ff00; /* Зелёный цвет текста */
+        }
+        .binary-code {
+            position: absolute;
+            font-size: 24px; /* Размер шрифта для двоичного кода */
+            color: #00ff00;
+            opacity: 1;
+            animation: fade 5s forwards; /* Анимация исчезновения */
+        }
+        @keyframes fade {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        #geminiCanvas {
+            display: none; /* Скрываем канвас по умолчанию */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Центровка канваса */
+            border: 2px solid #00ff00; /* Зелёная рамка */
+        }
+    </style>
+</head>
+<body>
+    <div id="console"></div>
+    <input type="text" id="inputField" placeholder="Enter command...">
+    <canvas id="geminiCanvas" width="300" height="300"></canvas>
+
+    <script>
+        // Размеры поля
+        const sizeX = 9;
+        const sizeY = 9;
+
+        // Создание игрового поля
+        let board = Array.from({ length: sizeX }, () => Array(sizeY).fill('.'));
+        
+        // Начальные позиции игрока и объектов
+        let heroX = Math.floor(sizeX / 2);
+        let heroY = Math.floor(sizeY / 2);
+        const computerX = Math.floor(sizeX / 2) - 1;
+        const computerY = Math.floor(sizeY / 2);
+        const shelfX1 = 2, shelfY1 = 2;
+        const shelfX2 = 5, shelfY2 = 5;
+        const cabinetX = 7, cabinetY = 7;
+
+        let canMove = false;
+        let foundFlashDrive = false;
+
+        // Состояние игры
+        let gameState = 'start';
+
+        // Отображение начальной сцены
+        function displayMessage(message) {
+            const consoleElement = document.getElementById('console');
+            consoleElement.innerHTML += message + '\n';
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+            createBinaryCode(5); // Увеличенное количество двоичных чисел
+        }
+
+        function clearConsole() {
+            const consoleElement = document.getElementById('console');
+            consoleElement.innerHTML = '';
+        }
+
+        function drawBoard() {
+            let output = '';
+            for (let i = 0; i < sizeX; ++i) {
+                for (let j = 0; j < sizeY; ++j) {
+                    if (i === computerX && j === computerY) {
+                        board[i][j] = '%';
+                    } else if (
+                        (i === shelfX1 && j >= shelfY1 && j <= shelfY1 + 2) ||
+                        (i === shelfX2 && j >= shelfY2 && j <= shelfY2 + 2)
+                    ) {
+                        board[i][j] = '#';
+                    } else if (i === cabinetX && j === cabinetY) {
+                        board[i][j] = 'G';
+                    } else if (i === heroX && j === heroY) {
+                        board[i][j] = '@';
+                    } else if (i === 0 || i === sizeX - 1 || j === 0 || j === sizeY - 1) {
+                        board[i][j] = '*';
+                    } else {
+                        board[i][j] = '.';
+                    }
+                    output += board[i][j] + ' ';
+                }
+                output += '\n';
+            }
+            displayMessage(output);
+        }
+
+        // Начальный диалог
+        displayMessage("Вы в очередной раз пришли после своей нелюбимой работы и уселись за компьютер...");
+        displayMessage("Выберите действие:\n1. Подумать, чтобы этого всего не было и вернуться к прошлой жизни.\n2. Подумать о печеньке.");
+
+        // Управление игрой через ввод
+        document.getElementById('inputField').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('inputField').value;
+                document.getElementById('inputField').value = '';
+                
+                if (gameState === 'start') {
+                    if (input === '1') {
+                        endGame("Пацифист");
+                    } else if (input === '2') {
+                        displayMessage("Вы получили свою печеньку. Теперь можно двигаться.");
+                        canMove = true;
+                        gameState = 'move';
+                        drawBoard();
+                    } else {
+                        displayMessage("Неверный выбор.");
+                    }
+                } else if (gameState === 'move') {
+                    handleMovement(input);
+                } else if (gameState === 'shelf') {
+                    handleShelfInteraction(input);
+                } else if (gameState === 'flashDrive') {
+                    handleFlashDriveChoice(input);
+                } else if (gameState === 'rubiksCube') {
+                    handleRubiksCubeChoice(input);
+                }
+            }
+        });
+
+        // Функция для обработки движений игрока
+        function handleMovement(input) {
+            board[heroX][heroY] = '.';
+            
+            switch (input.toLowerCase()) {
+                case 'w':
+                    if (heroX > 1) heroX--;
+                    break;
+                case 'a':
+                    if (heroY > 1) heroY--;
+                    break;
+                case 's':
+                    if (heroX < sizeX - 2) heroX++;
+                    break;
+                case 'd':
+                    if (heroY < sizeY - 2) heroY++;
+                    break;
+                default:
+                    displayMessage("Используйте W A S D для движения.");
+                    return;
+            }
+
+            if (board[heroX][heroY] === '#') {
+                displayMessage("Хотите взаимодействовать с полкой? (нажмите F)");
+                gameState = 'shelf';
+            } else {
+                drawBoard();
+            }
+        }
+
+        // Логика для взаимодействия с полкой
+        function handleShelfInteraction(input) {
+            if (input.toLowerCase() === 'f') {
+                foundFlashDrive = true;
+                displayMessage("Вы нашли флешку и вставили её. Загрузка кода Metamorphosis...");
+                gameState = 'flashDrive';
+                displayMessage("Выберите действие:\n1. Срочно вытащить флешку.\n2. Ждать.");
+            } else {
+                displayMessage("Неверная команда. Нажмите F для взаимодействия.");
+            }
+        }
+
+        // Логика с флешкой
+        function handleFlashDriveChoice(input) {
+            if (input === '1') {
+                displayMessage("Теперь найдите кубик Рубика.");
+                gameState = 'rubiksCube';
+                displayMessage("Вы нашли кубик Рубика.\n1. Срочно собрать кубик.\n2. Ждать.");
+            } else if (input === '2') {
+                endGame("Перезагрузка");
+            } else {
+                displayMessage("Неверный выбор. Выберите 1 или 2.");
+            }
+        }
+
+        // Логика с кубиком Рубика
+        function handleRubiksCubeChoice(input) {
+            if (input === '1') {
+                endGame("Встреча Близнецов");
+            } else if (input === '2') {
+                endGame("Осознание");
+            } else {
+                displayMessage("Неверный выбор. Выберите 1 или 2.");
+            }
+        }
+
+        // Завершение игры с сообщением о концовке
+        function endGame(endingName) {
+            clearConsole();
+            if (endingName === "Перезагрузка") {
+                displayMessage("ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА Перезагрузка...");
+                createBinaryCode(1000); // Создание большого количества двоичных кодов
+            } else {
+                displayMessage(`ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА\n"${endingName}"`);
+            }
+            gameState = 'end'; // Устанавливаем состояние игры в конец
+        }
+
+        // Функция для создания двоичного кода
+        function createBinaryCode(count) {
+            for (let i = 0; i < count; i++) {
+                const binaryDiv = document.createElement('div');
+                binaryDiv.className = 'binary-code';
+                binaryDiv.textContent = Math.floor(Math.random() * 2); // Случайный 0 или 1
+                binaryDiv.style.left = Math.random() * 100 + 'vw'; // Случайная позиция по горизонтали
+                binaryDiv.style.top = Math.random() * 100 + 'vh'; // Случайная позиция по вертикали
+                document.body.appendChild(binaryDiv);
+
+                // Удаляем элемент после завершения анимации
+                setTimeout(() => {
+                    binaryDiv.remove();
+                }, 5000); // Удаляем через 5 секунд
+            }
+        }
+    </script>
+</body>
+</html>
