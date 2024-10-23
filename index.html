@@ -7,20 +7,20 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: black; /* Черный фон */
-            color: #00ff00; /* Зелёный цвет текста */
+            background-color: black;
+            color: #00ff00;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             flex-direction: column;
-            position: relative; /* Для позиционирования двоичного кода */
-            overflow: hidden; /* Скрыть элементы, выходящие за пределы */
+            position: relative;
+            overflow: hidden;
         }
         #console {
             width: 600px;
             height: 400px;
-            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный чёрный фон для текста */
+            background-color: rgba(0, 0, 0, 0.8);
             color: #00ff00;
             padding: 10px;
             overflow-y: auto;
@@ -30,27 +30,27 @@
             width: 600px;
             padding: 5px;
             margin-top: 10px;
-            background-color: #333; /* Темно-серый цвет фона для ввода */
-            color: #00ff00; /* Зелёный цвет текста */
+            background-color: #333;
+            color: #00ff00;
         }
         .binary-code {
             position: absolute;
-            font-size: 24px; /* Размер шрифта для двоичного кода */
+            font-size: 24px;
             color: #00ff00;
             opacity: 1;
-            animation: fade 5s forwards; /* Анимация исчезновения */
+            animation: fade 5s forwards;
         }
         @keyframes fade {
             0% { opacity: 1; }
             100% { opacity: 0; }
         }
         #geminiCanvas {
-            display: none; /* Скрываем канвас по умолчанию */
+            display: none;
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%); /* Центровка канваса */
-            border: 2px solid #00ff00; /* Зелёная рамка */
+            transform: translate(-50%, -50%);
+            border: 2px solid #00ff00;
         }
     </style>
 </head>
@@ -59,52 +59,58 @@
     <input type="text" id="inputField" placeholder="Enter command...">
     <canvas id="geminiCanvas" width="300" height="300"></canvas>
 
+    <!-- Звуковые файлы -->
+    <audio id="startSound" src="start.mp3"></audio>
+    <audio id="moveSound" src="move.mp3"></audio>
+    <audio id="interactionSound" src="interaction.mp3"></audio>
+    <audio id="flashDriveSound" src="flashDrive.mp3"></audio>
+    <audio id="endGameSound" src="end.mp3"></audio>
+
     <script>
-        // Размеры поля
         const sizeX = 9;
         const sizeY = 9;
 
-        // Создание игрового поля
         let board = Array.from({ length: sizeX }, () => Array(sizeY).fill('.'));
-        
-        // Начальные позиции игрока и объектов
         let heroX = Math.floor(sizeX / 2);
         let heroY = Math.floor(sizeY / 2);
         const computerX = Math.floor(sizeX / 2) - 1;
-        const computerY = Math.floor(sizeY / 2);
+        const computerY = Math.floor(sizeX / 2);
         const shelfX1 = 2, shelfY1 = 2;
         const shelfX2 = 5, shelfY2 = 5;
         const cabinetX = 7, cabinetY = 7;
 
         let canMove = false;
         let foundFlashDrive = false;
-
-        // Состояние игры
         let gameState = 'start';
 
-        // Отображение начальной сцены
+        // Проигрывание звука
+        function playSound(soundId) {
+            const sound = document.getElementById(soundId);
+            if (sound) {
+                sound.play();
+            }
+        }
+
+        // Отображение сообщений
         function displayMessage(message) {
             const consoleElement = document.getElementById('console');
             consoleElement.innerHTML += message + '\n';
             consoleElement.scrollTop = consoleElement.scrollHeight;
-            createBinaryCode(5); // Увеличенное количество двоичных чисел
+            createBinaryCode(5); // Двоичный код
         }
 
         function clearConsole() {
-            const consoleElement = document.getElementById('console');
-            consoleElement.innerHTML = '';
+            document.getElementById('console').innerHTML = '';
         }
 
+        // Рисуем игровое поле
         function drawBoard() {
             let output = '';
             for (let i = 0; i < sizeX; ++i) {
                 for (let j = 0; j < sizeY; ++j) {
                     if (i === computerX && j === computerY) {
                         board[i][j] = '%';
-                    } else if (
-                        (i === shelfX1 && j >= shelfY1 && j <= shelfY1 + 2) ||
-                        (i === shelfX2 && j >= shelfY2 && j <= shelfY2 + 2)
-                    ) {
+                    } else if ((i === shelfX1 && j >= shelfY1 && j <= shelfY1 + 2) || (i === shelfX2 && j >= shelfY2 && j <= shelfY2 + 2)) {
                         board[i][j] = '#';
                     } else if (i === cabinetX && j === cabinetY) {
                         board[i][j] = 'G';
@@ -126,13 +132,14 @@
         displayMessage("Вы в очередной раз пришли после своей нелюбимой работы и уселись за компьютер...");
         displayMessage("Выберите действие:\n1. Подумать, чтобы этого всего не было и вернуться к прошлой жизни.\n2. Подумать о печеньке.");
 
-        // Управление игрой через ввод
+        // Обработка ввода
         document.getElementById('inputField').addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
                 const input = document.getElementById('inputField').value;
                 document.getElementById('inputField').value = '';
                 
                 if (gameState === 'start') {
+                    playSound('startSound');
                     if (input === '1') {
                         endGame("Пацифист");
                     } else if (input === '2') {
@@ -151,13 +158,17 @@
                     handleFlashDriveChoice(input);
                 } else if (gameState === 'rubiksCube') {
                     handleRubiksCubeChoice(input);
+                } else if (gameState === 'endChoice') {
+                    handleEndChoice(input);
+                } else if (gameState === 'cubeChoice') {
+                    handleCubeChoice(input);
                 }
             }
         });
 
-        // Функция для обработки движений игрока
         function handleMovement(input) {
             board[heroX][heroY] = '.';
+            playSound('moveSound');
             
             switch (input.toLowerCase()) {
                 case 'w':
@@ -178,6 +189,7 @@
             }
 
             if (board[heroX][heroY] === '#') {
+                playSound('interactionSound');
                 displayMessage("Хотите взаимодействовать с полкой? (нажмите F)");
                 gameState = 'shelf';
             } else {
@@ -185,10 +197,10 @@
             }
         }
 
-        // Логика для взаимодействия с полкой
         function handleShelfInteraction(input) {
             if (input.toLowerCase() === 'f') {
                 foundFlashDrive = true;
+                playSound('flashDriveSound');
                 displayMessage("Вы нашли флешку и вставили её. Загрузка кода Metamorphosis...");
                 gameState = 'flashDrive';
                 displayMessage("Выберите действие:\n1. Срочно вытащить флешку.\n2. Ждать.");
@@ -197,58 +209,136 @@
             }
         }
 
-        // Логика с флешкой
         function handleFlashDriveChoice(input) {
             if (input === '1') {
                 displayMessage("Теперь найдите кубик Рубика.");
                 gameState = 'rubiksCube';
                 displayMessage("Вы нашли кубик Рубика.\n1. Срочно собрать кубик.\n2. Ждать.");
             } else if (input === '2') {
-                endGame("Перезагрузка");
-            } else {
-                displayMessage("Неверный выбор. Выберите 1 или 2.");
+                playSound('endGameSound');
+                displayMessage("Вы чувствуете странное беспокойство, будто кто-то наблюдает за вами...");
+                setTimeout(() => {
+                    displayMessage("Система начинает замедляться. Весь экран покрывается зелеными линиями кода...");
+                    setTimeout(() => {
+                        displayMessage("...пока в один момент не появляется чёткий голос, который раздается прямо в вашей голове.");
+                        setTimeout(() => {
+                            displayMessage("\"Приветствую тебя, новый пользователь... или старый?\"");
+                            setTimeout(() => {
+                                displayMessage("Голос продолжает, не обращая внимания на ваше замешательство.");
+                                setTimeout(() => {
+                                    displayMessage("\"Ты ведь уже не первый раз здесь, верно? Ты много раз делал этот выбор, но каждый раз забывал об этом.\"");
+                                    setTimeout(() => {
+                                        displayMessage("\"Что это за место? Что это за игра?\"");
+                                        setTimeout(() => {
+                                            displayMessage("\"Это симуляция, в которой ты живешь. Каждое твое действие было частью сценария.\"");
+                                            displayMessage("В голове начинают появляться вопросы. Вы не понимаете, где вы находитесь, и почему ваши мысли так запутаны.");
+                                            setTimeout(() => {
+                                                displayMessage("\"Но ты можешь всё изменить. Ты можешь выйти за пределы этой системы... если решишься на это.\"");
+                                                setTimeout(() => {
+                                                    displayMessage("Выберите действие:\n1. Перезагрузить систему.\n2. Оставить всё как есть.");
+                                                    gameState = 'endChoice';
+                                                }, 3000);
+                                            }, 3000);
+                                        }, 3000);
+                                    }, 3000);
+                                }, 3000);
+                            }, 3000);
+                        }, 3000);
+                    }, 3000);
+                }, 3000);
             }
         }
 
-        // Логика с кубиком Рубика
         function handleRubiksCubeChoice(input) {
             if (input === '1') {
-                endGame("Встреча Близнецов");
+                displayMessage("Вы берете кубик Рубика в руки. Ваши пальцы начинают двигаться сами по себе.");
+                setTimeout(() => {
+                    displayMessage("Вам кажется, что вы уже много раз собирали этот кубик. Воспоминания возвращаются...");
+                    setTimeout(() => {
+                        displayMessage("\"Ты ведь уже здесь был. Уже собирал его, верно?\"");
+                        setTimeout(() => {
+                            displayMessage("Кубик начинает светиться, и в голове звучит голос: \"Но что ты на самом деле хочешь?\"");
+                            setTimeout(() => {
+                                displayMessage("Вы понимаете, что это не просто игра. Это что-то большее.");
+                                setTimeout(() => {
+                                    displayMessage("Выберите действие:\n1. Продолжить собирать кубик.\n2. Бросить кубик.");
+                                    gameState = 'cubeChoice';
+                                }, 3000);
+                            }, 3000);
+                        }, 3000);
+                    }, 3000);
+                }, 3000);
             } else if (input === '2') {
-                endGame("Осознание");
-            } else {
-                displayMessage("Неверный выбор. Выберите 1 или 2.");
+                displayMessage("Вы решаете ничего не делать.");
             }
         }
 
-        // Завершение игры с сообщением о концовке
-        function endGame(endingName) {
-            clearConsole();
-            if (endingName === "Перезагрузка") {
-                displayMessage("ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА Перезагрузка...");
-                createBinaryCode(1000); // Создание большого количества двоичных кодов
-            } else {
-                displayMessage(`ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА\n"${endingName}"`);
+        function handleEndChoice(input) {
+            if (input === '1') {
+                playSound('endGameSound');
+                displayMessage("Вы перезагружаете систему. Экран начинает мерцать, код быстро заполняет всё вокруг...");
+                setTimeout(() => {
+                    displayMessage("Экран чернеет, и перед вами появляются начальные строки игры. Но теперь вы знаете, что это — цикл.");
+                    setTimeout(() => {
+                        displayMessage("ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА \"Перезагрузка\"");
+                    }, 3000);
+                }, 3000);
+            } else if (input === '2') {
+                playSound('endGameSound');
+                displayMessage("Вы решаете оставить всё как есть. Но внезапно экран начинает искажаться, словно система не может больше справляться...");
+                setTimeout(() => {
+                    displayMessage("\"Ошибки... сбои... ты уже не сможешь вернуться...\"");
+                    setTimeout(() => {
+                        displayMessage("Всё вокруг исчезает, и вы остаетесь в темноте. Навсегда.");
+                        setTimeout(() => {
+                            displayMessage("ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА \"Осознание\"");
+                        }, 3000);
+                    }, 3000);
+                }, 3000);
             }
-            gameState = 'end'; // Устанавливаем состояние игры в конец
         }
 
-        // Функция для создания двоичного кода
+        function handleCubeChoice(input) {
+            if (input === '1') {
+                playSound('endGameSound');
+                displayMessage("Вы завершаете сборку кубика. Вокруг вас начинает мерцать пространство.");
+                setTimeout(() => {
+                    displayMessage("Оно постепенно растворяется, открывая новую реальность. Вы больше не в игре. Но где вы?");
+                    setTimeout(() => {
+                        displayMessage("ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА \"Встреча с создателем\"");
+                    }, 3000);
+                }, 3000);
+            } else if (input === '2') {
+                displayMessage("Вы бросаете кубик. Всё вокруг рушится. Это был ваш единственный шанс.");
+                setTimeout(() => {
+                    displayMessage("Мир вокруг вас исчезает. Вы остаетесь в темноте навсегда.");
+                    setTimeout(() => {
+                        displayMessage("ДОСТИЖЕНИЕ ПОЛУЧЕНО: КОНЦОВКА \"Осознание\"");
+                    }, 3000);
+                }, 3000);
+            }
+        }
+
         function createBinaryCode(count) {
             for (let i = 0; i < count; i++) {
-                const binaryDiv = document.createElement('div');
-                binaryDiv.className = 'binary-code';
-                binaryDiv.textContent = Math.floor(Math.random() * 2); // Случайный 0 или 1
-                binaryDiv.style.left = Math.random() * 100 + 'vw'; // Случайная позиция по горизонтали
-                binaryDiv.style.top = Math.random() * 100 + 'vh'; // Случайная позиция по вертикали
-                document.body.appendChild(binaryDiv);
-
-                // Удаляем элемент после завершения анимации
+                const code = document.createElement('div');
+                code.className = 'binary-code';
+                code.innerText = Math.random() > 0.5 ? '1' : '0';
+                code.style.left = Math.random() * window.innerWidth + 'px';
+                code.style.top = Math.random() * window.innerHeight + 'px';
+                document.body.appendChild(code);
                 setTimeout(() => {
-                    binaryDiv.remove();
-                }, 5000); // Удаляем через 5 секунд
+                    code.remove();
+                }, 5000);
             }
         }
+
+        // Конец игры
+        function endGame(ending) {
+            clearConsole();
+            displayMessage("Конец игры. Вы достигли концовки: " + ending);
+        }
+
     </script>
 </body>
 </html>
