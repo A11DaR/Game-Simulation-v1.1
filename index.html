@@ -58,14 +58,6 @@
     <div id="console"></div>
     <input type="text" id="inputField" placeholder="Enter command...">
     <canvas id="geminiCanvas" width="300" height="300"></canvas>
-
-    <!-- Звуковые файлы -->
-    <audio id="startSound" src="start.mp3"></audio>
-    <audio id="moveSound" src="move.mp3"></audio>
-    <audio id="interactionSound" src="interaction.mp3"></audio>
-    <audio id="flashDriveSound" src="flashDrive.mp3"></audio>
-    <audio id="endGameSound" src="end.mp3"></audio>
-
     <script>
         const sizeX = 9;
         const sizeY = 9;
@@ -83,7 +75,7 @@
         let foundFlashDrive = false;
         let gameState = 'start';
 
-        // Проигрывание звука
+    
         function playSound(soundId) {
             const sound = document.getElementById(soundId);
             if (sound) {
@@ -91,19 +83,19 @@
             }
         }
 
-        // Отображение сообщений
+        
         function displayMessage(message) {
             const consoleElement = document.getElementById('console');
             consoleElement.innerHTML += message + '\n';
             consoleElement.scrollTop = consoleElement.scrollHeight;
-            createBinaryCode(5); // Двоичный код
+            createBinaryCode(5); 
         }
 
         function clearConsole() {
             document.getElementById('console').innerHTML = '';
         }
 
-        // Рисуем игровое поле
+     
         function drawBoard() {
             let output = '';
             for (let i = 0; i < sizeX; ++i) {
@@ -128,11 +120,11 @@
             displayMessage(output);
         }
 
-        // Начальный диалог
+       
         displayMessage("Вы в очередной раз пришли после своей нелюбимой работы и уселись за компьютер...");
         displayMessage("Выберите действие:\n1. Подумать, чтобы этого всего не было и вернуться к прошлой жизни.\n2. Подумать о печеньке.");
 
-        // Обработка ввода
+      
         document.getElementById('inputField').addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
                 const input = document.getElementById('inputField').value;
@@ -333,7 +325,7 @@
             }
         }
 
-        // Конец игры
+    
         function endGame(ending) {
             clearConsole();
             displayMessage("Конец игры. Вы достигли концовки: " + ending);
@@ -342,3 +334,4 @@
     </script>
 </body>
 </html>
+
